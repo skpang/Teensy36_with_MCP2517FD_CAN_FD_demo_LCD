@@ -8,13 +8,13 @@
  * skpang.co.uk
  * 
  */
-
+#include <FlexCAN.h>
 #include "drv_canfdspi_api.h"
 #include "drv_canfdspi_register.h"
 #include "drv_canfdspi_defines.h"
 #include "drv_spi.h"
 
-#include <SPIN.h>
+//#include <SPIN.h>
 #include "SPI.h"
 #include "ILI9341_t3n.h"
 #include "ili9341_t3n_font_Arial.h"
@@ -29,11 +29,12 @@
 #define TFT_MISO 1 // 0xe3
 #define TFT_MOSI 0 // 0xe1
 #define TFT_RESET 8
-ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RESET, TFT_MOSI, TFT_SCK, TFT_MISO, &SPIN1);
+//ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RESET, TFT_MOSI, TFT_SCK, TFT_MISO, &SPIN1);
+ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RESET, TFT_MOSI, TFT_SCK, TFT_MISO);
 #endif
 
 volatile uint32_t can_msg_count = 0;
-
+CAN_message_t msg,rxmsg;
 extern uint8_t txd[MAX_DATA_BYTES];
 extern CAN_TX_MSGOBJ txObj;
 
@@ -52,14 +53,14 @@ void setup() {
   pinMode(JOY_RIGHT, INPUT_PULLUP);
   
   delay(1000);
-  
+  Can1.begin(500000); //set speed here.
    tft.begin();
   tft.setRotation(3);
   tft.fillScreen(ILI9341_BLACK);
   tft.setTextColor(ILI9341_YELLOW);
   tft.setFont(Arial_10);
   tft.setCursor(0, 0);
-  tft.println("CAN FD Tx Test v1.0    skpang.co.uk 01/18");
+  tft.println("CAN FD Tx Test v1.1    skpang.co.uk 03/20");
   tft.setCursor(0, 20);
   tft.println("Click:Start/Pause");
   tft.setCursor(0, 31);
@@ -87,7 +88,17 @@ void setup() {
   txd[7] = can_msg_count;
   delay(100);
      
-   
+        msg.buf[0] = 1;
+  msg.buf[1] = 2;
+  msg.buf[2] = 0;
+  msg.buf[3] = 0;
+  msg.buf[4] = 0;
+  msg.buf[5] = 0;
+  msg.buf[6] = 0;
+  msg.len = 8;
+  msg.id = 0x7DF;
+  msg.ext =0 ;
+  msg.rtr =0 ;
 }
 void update_count(void)
 { 
@@ -165,8 +176,8 @@ void loop() {
 
   can_msg_count++;
   update_count();
-  delay(100);
-
+  delay(500);
+ Can1.write(msg);
   if(digitalReadFast(int1_pin) == 0)  // Read int1 pin on MCP2517FD
   {
     // It is low read out the data
@@ -174,9 +185,3 @@ void loop() {
   }
 
 }
-
-
-
-
-
-
